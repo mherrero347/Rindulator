@@ -1,3 +1,7 @@
+finished the plan, time to work on getting LiSa to create live input buffer base
+d on trigger event (key trigger for now), but first I'm gonna mess around with t
+he sample code!
+
 //File - Rindulator.ck
 //---------------------------------
 // I'm imagining sorta like rinding an orange, that skimming off of the
