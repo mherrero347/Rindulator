@@ -1,7 +1,3 @@
-finished the plan, time to work on getting LiSa to create live input buffer base
-d on trigger event (key trigger for now), but first I'm gonna mess around with t
-he sample code!
-
 //File - Rindulator.ck
 //---------------------------------
 // I'm imagining sorta like rinding an orange, that skimming off of the
@@ -40,3 +36,52 @@ he sample code!
 //       while (not at end of buffer)
 //            play the grain (with appropriate control parameters) for grain_play_length time
 //            step grain forward (append new samples, remove front samples)
+
+// ---- KEYBOARD MONITORING --- //
+Hid hi;
+HidMsg msg;
+
+// which device
+0 => int device;
+
+// open joystick 0, exit on fail
+if( !hi.openKeyboard( device ) ) me.exit();
+// log
+<<< "keyboard '" + hi.name() + "' ready", "" >>>;
+
+// keyboard
+fun void key_monitor_shred()
+{
+    // infinite event loop
+    while( true )
+    {
+        // wait on HidIn as event
+        hi => now;
+        
+        // messages received
+        while( hi.recv( msg ) )
+        {
+            // button donw
+            if( msg.isButtonDown() )
+            {
+                spork ~ mock_record();
+            }
+        }
+    }
+}
+
+fun void mock_record()
+{
+    now + 3::second => time rec_time;
+    while (now < rec_time){
+        <<<"recording">>>;
+        500::ms => now;
+    }
+    <<< "done recording" >>>;
+    
+}
+
+// ---- END KEYBOARD MONITORING --- //
+
+spork ~ key_monitor_shred();
+while(1::second => now){};
