@@ -37,51 +37,77 @@
 //            play the grain (with appropriate control parameters) for grain_play_length time
 //            step grain forward (append new samples, remove front samples)
 
-// ---- KEYBOARD MONITORING --- //
+// ---- Globals/Constants ---- //
 Hid hi;
 HidMsg msg;
+LiSa lisa;
+3::second => dur BUFFER_DUR;
+50::ms => dur GRAIN_DUR;
+1::second => dur GRAIN_PLAY_DUR;
 
-// which device
+44 => int SPACE_BAR_KEY;
+82 => int UP_KEY;
+81 => int DOWN_KEY;
+26 => int W_KEY;
+22 => int S_KEY;
+
+0 => int GRAIN_TUNE_MIN;
+2 => int GRAIN_TUNE_MAX;
+.000001 => float GRAIN_POS_RAND_MIN;
+1 => float GRAIN_POS_RAND_MAX;
+
+// ---- Control Parameters ---- //
+1 => float grain_tuning;
+GRAIN_POS_RAND_MIN => float grain_pos_rand;
+
+// --- Setting up LiSa ---- //
+lisa => dac;
+
+
+// ---- Buffer Recording ---- //
+fun void fill_buffer() {
+    adc => lisa;
+
+    adc =< lisa;
+}
+
+// ---- KEYBOARD MONITORING --- //
+
 0 => int device;
-
-// open joystick 0, exit on fail
 if( !hi.openKeyboard( device ) ) me.exit();
-// log
 <<< "keyboard '" + hi.name() + "' ready", "" >>>;
 
 // keyboard
-fun void key_monitor_shred()
-{
+fun void key_monitor_shred() {
     // infinite event loop
-    while( true )
-    {
+    while(true) {
         // wait on HidIn as event
         hi => now;
         
         // messages received
-        while( hi.recv( msg ) )
-        {
-            // button donw
-            if( msg.isButtonDown() )
-            {
-                spork ~ mock_record();
+        while(hi.recv(msg)) {
+            // button down
+            if(msg.isButtonDown()) {
+                if(msg.which == SPACE_BAR_KEY) {
+                    spork ~ fill_buffer();
+                } else if (msg.which == UP_KEY) {
+                    0.005 +=> grain_tuning;
+                    if(grain_tuning > GRAIN_TUNE_MAX) GRAIN_TUNE_MAX => grain_tuning;
+                } else if (msg.which == DOWN_KEY) {
+                    0.005 -=> grain_tuning;
+                    if(grain_tuning < GRAIN_TUNE_MIN) GRAIN_TUNE_MIN => grain_tuning;
+                } else if (msg.which == W_KEY) {
+                    1.1 *=> grain_pos_rand;
+                    if(grain_pos_rand > GRAIN_POS_RAND_MAX) GRAIN_POS_RAND_MAX => grain_pos_rand;
+                } else if (msg.which == S_KEY) {
+                    .9 *=> grain_pos_rand;
+                    if(grain_pos_rand < GRAIN_POS_RAND_MIN) GRAIN_POS_RAND_MIN => grain_pos_rand;
+                }
             }
         }
     }
 }
 
-fun void mock_record()
-{
-    now + 3::second => time rec_time;
-    while (now < rec_time){
-        <<<"recording">>>;
-        500::ms => now;
-    }
-    <<< "done recording" >>>;
-    
-}
-
-// ---- END KEYBOARD MONITORING --- //
-
+// ---- PSUEDO-MAIN ---- //
 spork ~ key_monitor_shred();
 while(1::second => now){};
